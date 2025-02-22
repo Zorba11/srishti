@@ -21,6 +21,7 @@ model User {
   credits         String?
   subscriptions   Subscription[]
   invoices        Invoice[]
+  movies          Movie[]
 
   @@map("users")
 }
@@ -38,7 +39,7 @@ model Subscription {
   email                  String
   userId                 String           @map("user_id")
   user                   User             @relation(fields: [userId], references: [userId])
-  plan                   SubscriptionPlan @relation(fields: [planId], references: [planId])
+  plan                   SubscriptionPlan @relation(fields: [planId], references: [stripePlanId])
   invoices               Invoice[]
 
   @@map("subscriptions")
@@ -47,15 +48,15 @@ model Subscription {
 model SubscriptionPlan {
   id            Int            @id @default(autoincrement())
   createdTime   DateTime       @default(now()) @map("created_time")
-  planId        String         @unique @map("plan_id")
+  stripePlanId  String         @unique @map("plan_id")
   name          String
   description   String
-  amount        String
+  amount        Int
   currency      String
   interval      String
   subscriptions Subscription[]
 
-  @@map("subscriptions_plans")
+  @@map("subscription_plans")
 }
 
 model Invoice {
@@ -73,4 +74,274 @@ model Invoice {
   subscription   Subscription @relation(fields: [subscriptionId], references: [subscriptionId])
 
   @@map("invoices")
+}
+
+model Movie {
+  id                        Int      @id @default(autoincrement())
+  title                     String
+  userId                    Int
+  prompt                    String
+  ideasAgentSystemPrompt    String?
+  productImageUrl           String?  @map("product_image_url")
+  promptCharacterCount      Int      @map("prompt_character_count")
+  promptCharacterCountLimit Int      @map("prompt_character_count_limit")
+  storyStructureStyle       String   @map("story_structure_style")
+  animationStyle            String   @map("animation_style")
+  isAllAssetReady           Boolean  @default(false) @map("is_all_asset_ready")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @default(now()) @map("updated_at")
+  actorId                   Int?     @map("actor_id")
+  actor                     Actor?   @relation(fields: [actorId], references: [id])
+
+  user                User                  @relation(fields: [userId], references: [id])
+  top10Ideas          Top10Idea[]
+  ideaSelected        IdeaSelected[]
+  firstScriptDraft    FirstScriptDraft[]
+  finalScript         FinalScript[]
+  directorsScreenplay DirectorsScreenplay[]
+  characters          Character[]
+  dialogues           Dialogue[]
+  livePortraits       LivePortrait[]
+  scenes              Scene[]
+  sceneVideos         SceneVideo[]
+  music               Music[]
+  inferenceCosts      InferenceCost[]
+  finalMovies         FinalMovie[]
+
+  @@map("movie")
+}
+
+model Top10Idea {
+  id       Int  @id @default(autoincrement())
+  movieId  Int  @map("movie_id")
+  ideaList Json @map("idea_list")
+  modelId  Int  @map("model_id")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("top10_ideas")
+}
+
+model IdeaSelected {
+  id           Int    @id @default(autoincrement())
+  movieId      Int    @map("movie_id")
+  selectedIdea String @map("selected_idea")
+  modelId      Int    @map("model_id")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("idea_selected")
+}
+
+model FirstScriptDraft {
+  id            Int    @id @default(autoincrement())
+  movieId       Int    @map("movie_id")
+  scriptContent String @map("script_content")
+  modelId       Int    @map("model_id")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("first_script_draft")
+}
+
+model FinalScript {
+  id                 Int    @id @default(autoincrement())
+  movieId            Int    @map("movie_id")
+  finalScriptContent String @map("final_script_content")
+  modelId            Int    @map("model_id")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("final_script")
+}
+
+model DirectorsScreenplay {
+  id                Int    @id @default(autoincrement())
+  movieId           Int    @map("movie_id")
+  screenplayContent String @map("screenplay_content")
+  modelId           Int    @map("model_id")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("directors_screenplay")
+}
+
+model Character {
+  id             Int     @id @default(autoincrement())
+  movieId        Int     @map("movie_id")
+  name           String
+  portraitPrompt String  @map("portrait_prompt")
+  portraitUrl    String? @map("portrait_url")
+  modelId        Int     @map("model_id")
+  voiceModel     String  @map("voice_model")
+
+  movie     Movie      @relation(fields: [movieId], references: [id])
+  model     Model      @relation(fields: [modelId], references: [id])
+  dialogues Dialogue[]
+  Scene     Scene[]
+
+  @@map("characters")
+}
+
+model Dialogue {
+  id                     Int     @id @default(autoincrement())
+  movieId                Int     @map("movie_id")
+  characterId            Int     @map("character_id")
+  dialogueNumber         Int     @map("dialogue_number")
+  dialogueText           String  @map("dialogue_text")
+  speechAudioUrl         String? @map("speech_audio_url")
+  tone                   String
+  modelName              String? @map("model_name")
+  modelId                Int     @map("model_id")
+  isLivePortraitDialogue Boolean @default(false) @map("is_live_portrait_dialogue")
+
+  movie         Movie          @relation(fields: [movieId], references: [id])
+  character     Character      @relation(fields: [characterId], references: [id])
+  model         Model          @relation(fields: [modelId], references: [id])
+  livePortraits LivePortrait[]
+
+  @@map("dialogues")
+}
+
+model LivePortrait {
+  id              Int     @id @default(autoincrement())
+  movieId         Int     @map("movie_id")
+  prompt          String
+  livePortraitUrl String? @map("live_portrait_url")
+  dialogueId      Int     @map("dialogue_id")
+  modelName       String? @map("model_name")
+
+  movie    Movie    @relation(fields: [movieId], references: [id])
+  dialogue Dialogue @relation(fields: [dialogueId], references: [id])
+
+  @@map("live_portraits")
+}
+
+model Scene {
+  id                 Int     @id @default(autoincrement())
+  movieId            Int     @map("movie_id")
+  sceneNumber        Int     @map("scene_number")
+  sceneDuration      Int     @map("scene_duration")
+  hasProduct         Boolean @default(false) @map("has_product")
+  promptFirstDraft   String  @map("prompt_first_draft")
+  promptFinalDraft   String? @map("prompt_final_draft")
+  sceneBaseImageUrl1 String? @map("scene_base_image_url1")
+  sceneBaseImageUrl2 String? @map("scene_base_image_url2")
+  hasCharacter       Boolean @default(false) @map("has_character")
+  characterId        Int?    @map("character_id")
+  sceneImageBestUrl  String? @map("scene_image_best_url")
+  sceneIntroEffect   String? @map("scene_intro_effect")
+  sceneExitEffect    String? @map("scene_exit_effect")
+  modelId            Int     @map("model_id")
+
+  movie       Movie        @relation(fields: [movieId], references: [id])
+  character   Character?   @relation(fields: [characterId], references: [id])
+  model       Model        @relation(fields: [modelId], references: [id])
+  sceneVideos SceneVideo[]
+
+  @@map("scenes")
+}
+
+model SceneVideo {
+  id                   Int     @id @default(autoincrement())
+  movieId              Int     @map("movie_id")
+  sceneId              Int     @map("scene_id")
+  sceneVideoUrl        String  @map("scene_video_url")
+  modelId              Int     @map("model_id")
+  cameraMovement       String? @map("camera_movement")
+  sceneVideoFinalUrl   String? @map("scene_video_final_url")
+  sceneVideoTrimmedUrl String? @map("scene_video_trimmed_url")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  scene Scene @relation(fields: [sceneId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("scene_videos")
+}
+
+model Music {
+  id       Int    @id @default(autoincrement())
+  movieId  Int    @map("movie_id")
+  musicUrl String @map("music_url")
+  modelId  Int    @map("model_id")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("music")
+}
+
+model InferenceCost {
+  id                Int     @id @default(autoincrement())
+  movieId           Int     @map("movie_id")
+  modelId           Int     @map("model_id")
+  inferenceDuration Int     @map("inference_duration")
+  costInDollars     Int     @map("cost_in_dollars")
+  outputUrl         String? @map("output_url")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+  model Model @relation(fields: [modelId], references: [id])
+
+  @@map("inference_costs")
+}
+
+model FinalMovie {
+  id                        Int     @id @default(autoincrement())
+  movieId                   Int     @map("movie_id")
+  movieUrl                  String  @map("movie_url")
+  renderDuration            Int?    @map("render_duration")
+  fileSize                  Int?    @map("file_size")
+  fullStitchedVideoUrl      String  @map("full_stitched_video_url")
+  fullStitchedSoundMixedUrl String  @map("full_stitched_sound_mixed_url")
+  finalMovieUpscaled        Boolean @default(false) @map("final_movie_upscaled")
+
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@map("final_movies")
+}
+
+model Actor {
+  id          Int      @id @default(autoincrement())
+  name        String
+  portraitUrl String?  @map("portrait_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  movies      Movie[]
+
+  @@map("actors")
+}
+
+model AgentPrompts {
+  id        Int      @id @default(autoincrement())
+  name      String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("agent_prompts")
+}
+
+// for tracking inference cost
+model Model {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  top10Ideas          Top10Idea[]
+  ideaSelected        IdeaSelected[]
+  firstScriptDraft    FirstScriptDraft[]
+  finalScript         FinalScript[]
+  directorsScreenplay DirectorsScreenplay[]
+  characters          Character[]
+  dialogues           Dialogue[]
+  sceneVideos         SceneVideo[]
+  music               Music[]
+  inferenceCosts      InferenceCost[]
+  Scene               Scene[]
+
+  @@map("models")
 }
