@@ -47,6 +47,8 @@ export const ActorCard = ({
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           loading="eager"
           priority
+          quality={75}
+          unoptimized={true}
         />
 
         {/* Base hover overlay */}

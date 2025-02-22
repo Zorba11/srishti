@@ -12,8 +12,12 @@ export class MovieStore {
 
   // Instead of a public property, we use a private backing field
   private _movies: Movie[] = [];
+  private _currentMovie: Movie | null = null;
 
   isLoading: boolean = false;
+
+  // Add a new observable field to track actor selection
+  private _selectedActorId: number | null = null;
 
   constructor() {
     // autoBind ensures actions keep the correct "this" context
@@ -86,8 +90,9 @@ export class MovieStore {
       }
 
       const movie = await response.json();
-      this.setPowerOn();
+
       this.setCurrentMovieId(movie.id.toString());
+      this.setPowerOn();
 
       return movie;
     } catch (error) {
@@ -169,26 +174,38 @@ export class MovieStore {
   }
 
   setActiveMovie(movieId: string) {
-    console.log('[moviestore] settig  movie id: ', movieId);
+    console.log('[moviestore] setting movie id: ', movieId);
     this.currentMovieId = movieId;
+    const movie = this._movies.find((m) => m.id.toString() === movieId);
+    this._selectedActorId = movie?.actorId ?? null;
+    this.setPowerOn();
   }
 
+  // Update the currentMovie getter to use the cached value
+  get currentMovie(): Movie | null {
+    if (!this.currentMovieId) return null;
+
+    // Only lookup if _currentMovie doesn't match currentMovieId
+    if (
+      !this._currentMovie ||
+      this._currentMovie.id.toString() !== this.currentMovieId
+    ) {
+      this._currentMovie =
+        this.movies.find(
+          (movie) => movie.id.toString() === this.currentMovieId
+        ) ?? null;
+    }
+    return this._currentMovie;
+  }
+
+  // Update the isActorSelected getter to use the new field
   get isActorSelected() {
-    if (!this.currentMovieId) return false;
-    return this.currentMovie?.actorId !== undefined;
+    return Boolean(this._selectedActorId);
   }
 
   // Add this new getter to easily check if a specific actor is selected
   isActorSelectedById(actorId: number) {
     return this.currentMovie?.actorId === actorId;
-  }
-
-  get currentMovie(): Movie | null {
-    return (
-      this.movies.find(
-        (movie) => movie.id.toString() === this.currentMovieId
-      ) ?? null
-    );
   }
 
   async selectActor(actorId: number): Promise<boolean> {
@@ -211,7 +228,27 @@ export class MovieStore {
         throw new Error(error.message || 'Failed to select actor');
       }
 
-      return true; // Explicitly return true on success
+      // Update the selected actor ID immediately
+      this._selectedActorId = actorId;
+
+      // Update the current movie
+      if (this._currentMovie) {
+        this._currentMovie = {
+          ...this._currentMovie,
+          actorId,
+        };
+      }
+
+      // Update the movies array
+      const updatedMovies = this._movies.map((movie) =>
+        movie.id.toString() === this.currentMovieId
+          ? { ...movie, actorId }
+          : movie
+      );
+
+      this.setMovies(updatedMovies);
+
+      return true;
     } catch (error) {
       console.error('Error selecting actor:', error);
       throw error;
