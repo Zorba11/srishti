@@ -1,0 +1,7 @@
+- this is a Next JS, Typescript, prisma, project using the app router, tailwind css for styling, mobx and class based mobx stores for state management.
+- please create separate files and components as necessary.
+- pnpm is the package manager.
+- All styling should adhere to the best UI/UX Design best practices and concepts in color theory UI design, UI Animation design.
+principles, React component styling, tailwind css best practices, neumorphism aesthetic best practices, golden ratio, beauty maths etc.
+- The micro animations for the neumorphic style changes for example for hovering, clicking etc should be smooth, calm and pleasing to the human eye according.
+- We are using Clerk for authentication
