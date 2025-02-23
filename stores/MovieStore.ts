@@ -387,4 +387,9 @@ export class MovieStore {
       throw error;
     }
   }
+
+  get numberOfFrames(): number {
+    const numberOfFrames = this.screenplay?.content.length ?? 0;
+    return numberOfFrames;
+  }
 }

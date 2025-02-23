@@ -1,10 +1,11 @@
 'use client';
 import { motion } from 'framer-motion';
 import { observer } from 'mobx-react-lite';
-import { ScreenplayAgentStore, Shot } from '@/stores/ScreenplayStore';
+import { ScreenplayAgentStore } from '@/stores/ScreenplayStore';
 import { MovieStore } from '@/stores/MovieStore';
 import { DocumentIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { Shot } from '@/types/MovieTypes';
 
 interface Props {
   screenplayStore: ScreenplayAgentStore;
