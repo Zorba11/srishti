@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx';
 import { CreateMovieInput, createMovieSchema } from '@/lib/validations/movie';
-import { Actor, Movie, MovieStep } from '@/types/MovieTypes';
+import { Actor, Movie, MovieStep, Screenplay, Shot } from '@/types/MovieTypes';
 
 export class MovieStore {
   isPowerOn: boolean = false;
@@ -23,6 +23,8 @@ export class MovieStore {
 
   private _selectedScript: string | null = null;
 
+  private _selectedScreenplay: Screenplay | null = null;
+
   constructor() {
     // autoBind ensures actions keep the correct "this" context
     makeAutoObservable(this, {}, { autoBind: true });
@@ -43,6 +45,14 @@ export class MovieStore {
 
   setSelectedScript(script: string) {
     this._selectedScript = script;
+  }
+
+  setScreenplay(shots: Shot[]) {
+    this._selectedScreenplay = { content: shots };
+  }
+
+  get screenplay() {
+    return this._selectedScreenplay;
   }
 
   // Setter for movies – any update to the list goes through here
@@ -195,6 +205,11 @@ export class MovieStore {
       this.setSelectedScript(movie.selectedScript);
     }
 
+    if (movie?.selectedScreenplay) {
+      const screenplay = JSON.parse(movie.selectedScreenplay);
+      this.setScreenplay(screenplay);
+    }
+
     this.setPowerOn();
   }
 
@@ -325,6 +340,10 @@ export class MovieStore {
 
   get isScriptSelected(): boolean {
     return Boolean(this._selectedScript);
+  }
+
+  get isScreenplaySelected(): boolean {
+    return Boolean(this._selectedScreenplay);
   }
 
   async generateScript(params: {

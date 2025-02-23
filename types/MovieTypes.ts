@@ -29,6 +29,7 @@ export interface Movie {
   ideasAgentSystemPrompt: string;
   selectedIdea: string;
   selectedScript: string;
+  selectedScreenplay: string;
 }
 
 export interface MovieIdea {
@@ -39,4 +40,21 @@ export interface Actor {
   id: number;
   name: string;
   portraitUrl: string;
+}
+
+export interface Shot {
+  time: string;
+  shot: string;
+  action: string;
+  dialogue: string | null;
+  transition: string;
+}
+
+export interface ScreenplayPrompt {
+  userPrompt: string;
+  systemPrompt: string;
+}
+
+export interface Screenplay {
+  content: Shot[];
 }

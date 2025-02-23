@@ -91,24 +91,26 @@ model Invoice {
 }
 
 model Movie {
-  id                        Int      @id @default(autoincrement())
-  title                     String
-  userId                    Int
-  prompt                    String
-  selectedIdea              String?
-  selectedScript            String?
-  ideasAgentSystemPrompt    String?
-  scriptAgentSystemPrompt   String?
-  productImageUrl           String?  @map("product_image_url")
-  promptCharacterCount      Int      @map("prompt_character_count")
-  promptCharacterCountLimit Int      @map("prompt_character_count_limit")
-  storyStructureStyle       String   @map("story_structure_style")
-  animationStyle            String   @map("animation_style")
-  isAllAssetReady           Boolean  @default(false) @map("is_all_asset_ready")
-  createdAt                 DateTime @default(now()) @map("created_at")
-  updatedAt                 DateTime @default(now()) @map("updated_at")
-  actorId                   Int?     @map("actor_id")
-  actor                     Actor?   @relation(fields: [actorId], references: [id])
+  id                          Int      @id @default(autoincrement())
+  title                       String
+  userId                      Int
+  prompt                      String
+  selectedIdea                String?
+  selectedScript              String?
+  selectedScreenplay          String?
+  ideasAgentSystemPrompt      String?
+  scriptAgentSystemPrompt     String?
+  screenplayAgentSystemPrompt String?
+  productImageUrl             String?  @map("product_image_url")
+  promptCharacterCount        Int      @map("prompt_character_count")
+  promptCharacterCountLimit   Int      @map("prompt_character_count_limit")
+  storyStructureStyle         String   @map("story_structure_style")
+  animationStyle              String   @map("animation_style")
+  isAllAssetReady             Boolean  @default(false) @map("is_all_asset_ready")
+  createdAt                   DateTime @default(now()) @map("created_at")
+  updatedAt                   DateTime @default(now()) @map("updated_at")
+  actorId                     Int?     @map("actor_id")
+  actor                       Actor?   @relation(fields: [actorId], references: [id])
 
   user                User                  @relation(fields: [userId], references: [id])
   top10Ideas          Top10Idea[]
