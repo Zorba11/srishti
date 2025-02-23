@@ -8,6 +8,20 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum ModelType {
+  TEXT
+  IMAGE
+  VIDEO
+  DIALOGUE
+  MUSIC
+}
+
+enum UnitType {
+  TOKEN
+  SECOND
+  IMAGE
+}
+
 model User {
   id              Int            @id @default(autoincrement())
   createdTime     DateTime       @default(now()) @map("created_time")
@@ -81,7 +95,10 @@ model Movie {
   title                     String
   userId                    Int
   prompt                    String
+  selectedIdea              String?
+  selectedScript            String?
   ideasAgentSystemPrompt    String?
+  scriptAgentSystemPrompt   String?
   productImageUrl           String?  @map("product_image_url")
   promptCharacterCount      Int      @map("prompt_character_count")
   promptCharacterCountLimit Int      @map("prompt_character_count_limit")
@@ -111,14 +128,44 @@ model Movie {
   @@map("movie")
 }
 
+model AIModel {
+  id                Int       @id @default(autoincrement())
+  name              String    @unique
+  type              ModelType // The type of content this model can generate
+  provider          String // e.g., 'OpenAI', 'Anthropic', 'Stability'
+  inputTokenCost    Float? // Cost per million input tokens
+  outputTokenCost   Float? // Cost per million output tokens
+  costPerUnit       Float? // Cost per token/second/image
+  unitType          UnitType // The unit used for cost calculation
+  contextWindowSize Int? // For text models, max tokens they can process
+  version           String? // Model version or identifier
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  inferenceCosts      InferenceCost[]
+  Scene               Scene[]
+  Top10Idea           Top10Idea[]
+  IdeaSelected        IdeaSelected[]
+  FirstScriptDraft    FirstScriptDraft[]
+  FinalScript         FinalScript[]
+  DirectorsScreenplay DirectorsScreenplay[]
+  Character           Character[]
+  Dialogue            Dialogue[]
+  SceneVideo          SceneVideo[]
+  Music               Music[]
+
+  @@map("ai_models")
+}
+
 model Top10Idea {
   id       Int  @id @default(autoincrement())
   movieId  Int  @map("movie_id")
   ideaList Json @map("idea_list")
   modelId  Int  @map("model_id")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("top10_ideas")
 }
@@ -129,8 +176,8 @@ model IdeaSelected {
   selectedIdea String @map("selected_idea")
   modelId      Int    @map("model_id")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("idea_selected")
 }
@@ -141,8 +188,8 @@ model FirstScriptDraft {
   scriptContent String @map("script_content")
   modelId       Int    @map("model_id")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("first_script_draft")
 }
@@ -153,8 +200,8 @@ model FinalScript {
   finalScriptContent String @map("final_script_content")
   modelId            Int    @map("model_id")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("final_script")
 }
@@ -165,8 +212,8 @@ model DirectorsScreenplay {
   screenplayContent String @map("screenplay_content")
   modelId           Int    @map("model_id")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("directors_screenplay")
 }
@@ -181,7 +228,7 @@ model Character {
   voiceModel     String  @map("voice_model")
 
   movie     Movie      @relation(fields: [movieId], references: [id])
-  model     Model      @relation(fields: [modelId], references: [id])
+  AIModel   AIModel    @relation(fields: [modelId], references: [id])
   dialogues Dialogue[]
   Scene     Scene[]
 
@@ -200,10 +247,10 @@ model Dialogue {
   modelId                Int     @map("model_id")
   isLivePortraitDialogue Boolean @default(false) @map("is_live_portrait_dialogue")
 
-  movie         Movie          @relation(fields: [movieId], references: [id])
-  character     Character      @relation(fields: [characterId], references: [id])
-  model         Model          @relation(fields: [modelId], references: [id])
-  livePortraits LivePortrait[]
+  movie        Movie          @relation(fields: [movieId], references: [id])
+  character    Character      @relation(fields: [characterId], references: [id])
+  AIModel      AIModel        @relation(fields: [modelId], references: [id])
+  LivePortrait LivePortrait[]
 
   @@map("dialogues")
 }
@@ -241,7 +288,7 @@ model Scene {
 
   movie       Movie        @relation(fields: [movieId], references: [id])
   character   Character?   @relation(fields: [characterId], references: [id])
-  model       Model        @relation(fields: [modelId], references: [id])
+  AIModel     AIModel      @relation(fields: [modelId], references: [id])
   sceneVideos SceneVideo[]
 
   @@map("scenes")
@@ -257,9 +304,9 @@ model SceneVideo {
   sceneVideoFinalUrl   String? @map("scene_video_final_url")
   sceneVideoTrimmedUrl String? @map("scene_video_trimmed_url")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  scene Scene @relation(fields: [sceneId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  scene   Scene   @relation(fields: [sceneId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("scene_videos")
 }
@@ -270,8 +317,8 @@ model Music {
   musicUrl String @map("music_url")
   modelId  Int    @map("model_id")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("music")
 }
@@ -284,8 +331,8 @@ model InferenceCost {
   costInDollars     Int     @map("cost_in_dollars")
   outputUrl         String? @map("output_url")
 
-  movie Movie @relation(fields: [movieId], references: [id])
-  model Model @relation(fields: [modelId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  AIModel AIModel @relation(fields: [modelId], references: [id])
 
   @@map("inference_costs")
 }
@@ -318,30 +365,10 @@ model Actor {
 
 model AgentPrompts {
   id        Int      @id @default(autoincrement())
-  name      String
+  name      String   @unique
   content   String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("agent_prompts")
-}
-
-// for tracking inference cost
-model Model {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-
-  top10Ideas          Top10Idea[]
-  ideaSelected        IdeaSelected[]
-  firstScriptDraft    FirstScriptDraft[]
-  finalScript         FinalScript[]
-  directorsScreenplay DirectorsScreenplay[]
-  characters          Character[]
-  dialogues           Dialogue[]
-  sceneVideos         SceneVideo[]
-  music               Music[]
-  inferenceCosts      InferenceCost[]
-  Scene               Scene[]
-
-  @@map("models")
 }

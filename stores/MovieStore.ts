@@ -19,6 +19,10 @@ export class MovieStore {
   // Add a new observable field to track actor selection
   private _selectedActorId: number | null = null;
 
+  private _selectedIdea: string | null = null;
+
+  private _selectedScript: string | null = null;
+
   constructor() {
     // autoBind ensures actions keep the correct "this" context
     makeAutoObservable(this, {}, { autoBind: true });
@@ -35,6 +39,10 @@ export class MovieStore {
 
   get actors() {
     return this._actors;
+  }
+
+  setSelectedScript(script: string) {
+    this._selectedScript = script;
   }
 
   // Setter for movies – any update to the list goes through here
@@ -114,7 +122,6 @@ export class MovieStore {
   // New methods for each step
   handleIdeaClick() {
     this.currentStep = 'idea';
-    // Implementation coming soon
   }
 
   handleActorsClick() {
@@ -128,8 +135,9 @@ export class MovieStore {
   }
 
   handleScreenplayClick() {
-    this.currentStep = 'screenplay';
-    // Implementation coming soon
+    if (this.isScriptSelected) {
+      this.currentStep = 'screenplay';
+    }
   }
 
   handleShotsClick() {
@@ -175,26 +183,24 @@ export class MovieStore {
 
   setActiveMovie(movieId: string) {
     console.log('[moviestore] setting movie id: ', movieId);
-    this.currentMovieId = movieId;
-    const movie = this._movies.find((m) => m.id.toString() === movieId);
+    this.setCurrentMovieId(movieId);
+    const movie = this._movies.find((m) => m.id.toString() === movieId) ?? null;
+    this._currentMovie = movie;
     this._selectedActorId = movie?.actorId ?? null;
+
+    if (movie?.selectedIdea) {
+      this.setIdeaSelected(movie.selectedIdea);
+    }
+    if (movie?.selectedScript) {
+      this.setSelectedScript(movie.selectedScript);
+    }
+
     this.setPowerOn();
   }
 
   // Update the currentMovie getter to use the cached value
   get currentMovie(): Movie | null {
     if (!this.currentMovieId) return null;
-
-    // Only lookup if _currentMovie doesn't match currentMovieId
-    if (
-      !this._currentMovie ||
-      this._currentMovie.id.toString() !== this.currentMovieId
-    ) {
-      this._currentMovie =
-        this.movies.find(
-          (movie) => movie.id.toString() === this.currentMovieId
-        ) ?? null;
-    }
     return this._currentMovie;
   }
 
@@ -262,6 +268,104 @@ export class MovieStore {
       this.setActors(data);
     } catch (error) {
       console.error('Error loading actors:', error);
+    }
+  }
+
+  get isIdeaSelected(): boolean {
+    // Check if there's a selected idea using the private field
+    return Boolean(this._selectedIdea);
+  }
+
+  setIdeaSelected(idea: string) {
+    this._selectedIdea = idea;
+  }
+
+  async selectIdea(idea: string): Promise<boolean> {
+    if (!this.currentMovieId) return false;
+
+    try {
+      const response = await fetch(
+        `/api/movies/${this.currentMovieId}/select-idea`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ idea }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to select idea');
+      }
+
+      const updatedMovie = await response.json();
+
+      // Update the current movie
+      this._currentMovie = updatedMovie;
+
+      // Update movies array
+      const updatedMovies = this._movies.map((movie) =>
+        movie.id.toString() === this.currentMovieId ? updatedMovie : movie
+      );
+
+      this.setMovies(updatedMovies);
+
+      this.setIdeaSelected(idea);
+
+      // Proceed to next step
+      this.handleScriptClick();
+
+      return true;
+    } catch (error) {
+      console.error('Error selecting idea:', error);
+      throw error;
+    }
+  }
+
+  get isScriptSelected(): boolean {
+    return Boolean(this._selectedScript);
+  }
+
+  async generateScript(params: {
+    systemPrompt: string;
+    userPrompt: string;
+  }): Promise<boolean> {
+    if (!this.currentMovieId) return false;
+
+    try {
+      const response = await fetch(
+        `/api/movies/${this.currentMovieId}/generate-script`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(params),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate script');
+      }
+
+      const updatedMovie = await response.json();
+
+      // Update the current movie
+      this._currentMovie = updatedMovie;
+      this._selectedScript = updatedMovie.script;
+
+      // Update movies array
+      const updatedMovies = this._movies.map((movie) =>
+        movie.id.toString() === this.currentMovieId ? updatedMovie : movie
+      );
+
+      this.setMovies(updatedMovies);
+
+      return true;
+    } catch (error) {
+      console.error('Error generating script:', error);
+      throw error;
     }
   }
 }

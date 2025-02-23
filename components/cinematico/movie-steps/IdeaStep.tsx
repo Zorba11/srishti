@@ -23,9 +23,13 @@ export const IdeaStep = observer(() => {
           <IdeaPromptForm
             baseUserPrompt={movieStore.currentMovie?.prompt!}
             ideaStore={ideaStore}
+            movieId={movieStore.currentMovieId!}
+            movieSysPrompt={
+              movieStore.currentMovie?.ideasAgentSystemPrompt ?? ''
+            }
           />
         ) : (
-          <IdeaResults ideaStore={ideaStore} />
+          <IdeaResults movieStore={movieStore} ideaStore={ideaStore} />
         )}
       </div>
     </motion.div>

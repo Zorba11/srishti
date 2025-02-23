@@ -1,7 +1,6 @@
 import { makeObservable, observable } from 'mobx';
 import { BaseAgentStore } from './BaseAgentStore';
-
-const IDEAS_AGENT_BASE_PROMPT_NAME = 'IDEA_AGENT_BASE_SYSTEM_PROMPT';
+import { IDEAS_AGENT_BASE_PROMPT_NAME } from '@/constants/PromptNames';
 
 export interface IdeaPrompt {
   userPrompt: string;
@@ -9,10 +8,7 @@ export interface IdeaPrompt {
 }
 
 export interface MovieIdea {
-  id: string;
-  title: string;
   description: string;
-  genre: string;
 }
 
 export class IdeaAgentStore extends BaseAgentStore {
@@ -29,36 +25,42 @@ export class IdeaAgentStore extends BaseAgentStore {
     });
   }
 
-  async generateIdeas(prompt: IdeaPrompt) {
-    this.isGenerating = true;
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  setIsGenerating(value: boolean) {
+    this.isGenerating = value;
+  }
 
-    this.ideas = [
-      {
-        id: '1',
-        title: 'The Last Algorithm',
-        description:
-          "A rogue AI discovers emotions through a human's final piece of code.",
-        genre: 'Sci-fi Drama',
-      },
-      {
-        id: '2',
-        title: 'Quantum Lullaby',
-        description:
-          'A physicist mother uses quantum mechanics to save her daughter from time itself.',
-        genre: 'Science Fiction',
-      },
-      {
-        id: '3',
-        title: 'The Coffee Shop Revolution',
-        description:
-          "A barista's perfectly crafted coffee accidentally triggers a citywide awakening.",
-        genre: 'Magical Realism',
-      },
-    ];
-    this.isGenerating = false;
-    this.currentStep = 'results';
+  async generateIdeas(prompt: IdeaPrompt, movieId: string) {
+    try {
+      this.setIsGenerating(true);
+
+      const response = await fetch('/api/movies/generate-ideas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          movieId: movieId,
+          userPrompt: prompt.userPrompt,
+          systemPrompt: prompt.systemPrompt,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate ideas');
+      }
+
+      const generatedIdeas = await response.json();
+      this.ideas = generatedIdeas.map((idea: any) => ({
+        description: idea,
+      }));
+
+      this.currentStep = 'results';
+    } catch (error) {
+      console.error('Error generating ideas:', error);
+      // You might want to add error handling here
+    } finally {
+      this.setIsGenerating(false);
+    }
   }
 
   setStep(step: 'prompt' | 'results') {

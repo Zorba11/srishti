@@ -26,6 +26,13 @@ export interface Movie {
   promptCharacterCountLimit: number;
   storyStructureStyle: string;
   userId: number;
+  ideasAgentSystemPrompt: string;
+  selectedIdea: string;
+  selectedScript: string;
+}
+
+export interface MovieIdea {
+  description: string;
 }
 
 export interface Actor {
